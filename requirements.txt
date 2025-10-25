@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+requests
+apscheduler
+streamlit
+passlib[bcrypt]
+python-jose[cryptography]
+python-dateutil
+pydantic
