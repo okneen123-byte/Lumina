@@ -125,38 +125,44 @@ if st.button(texts["fetch"]):
     if not st.session_state.logged_in:
         st.warning("Bitte einloggen." if st.session_state.lang=="de" else "Please log in.")
     else:
-        payload = {
-            "email": st.session_state.email,
-            "password": st.session_state.get("input_password",""),  # Streamlit stores the typed password in session while logged in
-            "category": category,
-            "language": language,
-            "sort_by": sort_by,
-            "limit": limit
-        }
-        try:
-            resp = requests.post(f"{API_BASE}/news", json=payload, timeout=15)
-            if resp.status_code == 200:
-                data = resp.json()
-                news = data.get("news", [])
-                if not news:
-                    st.info(texts["no_news"])
+        # Passwort prüfen
+        pwd = st.session_state.get("input_password", None)
+        if not pwd:
+            st.warning("Passwort nicht verfügbar. Bitte erneut einloggen." if st.session_state.lang=="de" else "Password not available. Please log in.")
+        else:
+            payload = {
+                "email": st.session_state.email,
+                "password": pwd,
+                "category": category,
+                "language": language,
+                "sort_by": sort_by,
+                "limit": limit
+            }
+            try:
+                resp = requests.post(f"{API_BASE}/news", json=payload, timeout=15)
+                try:
+                    data = resp.json()
+                except ValueError:
+                    st.error("Ungültige Antwort vom Server.")
+                    data = {}
+                if resp.status_code == 200:
+                    news = data.get("news", [])
+                    if not news:
+                        st.info(texts["no_news"])
+                    else:
+                        for n in news:
+                            with st.container():
+                                st.markdown(f"### [{n['title']}]({n['url']})")
+                                st.write(f"{n.get('source','')}, {n.get('published_at','')}")
+                                importance = n.get("importance", 0)
+                                st.progress(int(importance*100))
+                                st.write(n.get("description",""))
+                                st.markdown("---")
                 else:
-                    # display cards
-                    for n in news:
-                        with st.container():
-                            st.markdown(f"### [{n['title']}]({n['url']})")
-                            st.write(f"{n.get('source','')}, {n.get('published_at','')}")
-                            # importance bar
-                            importance = n.get("importance", 0)
-                            st.progress(int(importance*100))
-                            st.write(n.get("description",""))
-                            st.markdown("---")
-            else:
-                # show error message
-                detail = resp.json().get("detail", "Fehler")
-                if resp.status_code == 403 and "Free trial limit" in detail:
-                    st.error(texts["trial_exhausted"])
-                else:
-                    st.error(detail)
-        except Exception as e:
-            st.error(f"Fehler beim Abrufen: {e}")
+                    detail = data.get("detail", "Fehler")
+                    if resp.status_code == 403 and "Free trial limit" in detail:
+                        st.error(texts["trial_exhausted"])
+                    else:
+                        st.error(detail)
+            except requests.exceptions.RequestException as e:
+                st.error(f"Fehler beim Abrufen: {e}")
