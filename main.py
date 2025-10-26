@@ -1,5 +1,6 @@
 # backend/main.py
 from fastapi import FastAPI, HTTPException
+app = FastAPI()
 from pydantic import BaseModel
 from backend.database import init_db, get_news, increment_user_query, get_user_query_count_today
 from backend.scheduler import start_scheduler
@@ -62,4 +63,5 @@ def news(req: NewsRequest):
     # limit sanity
     limit = max(5, min(100, req.limit))
     results = get_news(category=req.category, language=req.language, sort_by=req.sort_by, limit=limit)
+
     return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
