@@ -62,6 +62,7 @@ def news(req: NewsRequest):
     # limit sanity
     limit = max(5, min(100, req.limit))
     results = get_news(category=req.category, language=req.language, sort_by=req.sort_by, limit=limit)
-    return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
+    return{"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
+
 
 
