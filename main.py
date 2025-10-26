@@ -1,12 +1,13 @@
 # backend/main.py
 from fastapi import FastAPI, HTTPException
-app = FastAPI()
 from pydantic import BaseModel
 from backend.database import init_db, get_news, increment_user_query, get_user_query_count_today
 from backend.scheduler import start_scheduler
 from backend.auth import create_user, verify_user, is_paid
 from config import FREE_TRIAL_LIMIT, DB_PATH
-from backend.database import init_db as db_init
+
+# Init FastAPI once
+app = FastAPI(title="Lumina News KI API")
 
 # Models
 class SignupModel(BaseModel):
@@ -25,10 +26,8 @@ class NewsRequest(BaseModel):
     sort_by: str = "newest"  # or 'importance'
     limit: int = 30
 
-app = FastAPI(title="Lumina News KI API")
-
 # Init DB and scheduler
-db_init()
+init_db()
 start_scheduler()
 
 @app.post("/signup")
@@ -63,5 +62,5 @@ def news(req: NewsRequest):
     # limit sanity
     limit = max(5, min(100, req.limit))
     results = get_news(category=req.category, language=req.language, sort_by=req.sort_by, limit=limit)
+    return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
 
-    return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
