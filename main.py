@@ -35,7 +35,7 @@ def signup(data: SignupModel):
     ok = create_user(data.email.lower(), data.password)
     if not ok:
         raise HTTPException(status_code=400, detail="User exists")
-    return {"status": "ok", "message": "User created"}
+    return{"status": "ok", "message": "User created"}
 
 @app.post("/login")
 def login(data: LoginModel):
@@ -63,4 +63,5 @@ def news(req: NewsRequest):
     limit = max(5, min(100, req.limit))
     results = get_news(category=req.category, language=req.language, sort_by=req.sort_by, limit=limit)
     return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
+
 
