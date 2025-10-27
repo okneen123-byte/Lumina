@@ -6,6 +6,9 @@ from backend.scheduler import start_scheduler
 from backend.auth import create_user, verify_user, is_paid
 from config import FREE_TRIAL_LIMIT, DB_PATH
 
+# --------- WICHTIG: DB initialisieren ---------
+init_db()  # erstellt alle Tabellen, falls sie fehlen
+
 # Init FastAPI once
 app = FastAPI(title="Lumina News KI API")
 
@@ -69,4 +72,5 @@ def news(req: NewsRequest):
     limit = max(5, min(100, req.limit))
     results = get_news(category=req.category, language=req.language, sort_by=req.sort_by, limit=limit)
     return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
+
 
