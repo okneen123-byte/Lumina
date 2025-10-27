@@ -1,46 +1,10 @@
-import sqlite3
-from config import DB_PATH
+# config.py
+import os
 
-def init_db():
-    """Initialisiert oder repariert die Datenbank automatisch."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+# ---------------------- Datenbank ----------------------
+# Absoluter Pfad zur SQLite-Datenbank
+DB_PATH = os.path.join(os.path.dirname(__file__), "data/news.db")
 
-    # Tabelle news
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            description TEXT,
-            url TEXT,
-            source TEXT,
-            category TEXT,
-            language TEXT,
-            importance REAL DEFAULT 0,
-            published_at TEXT
-        )
-    """)
+# ---------------------- Free Trial ----------------------
+FREE_TRIAL_LIMIT = 10
 
-    # Tabelle user_queries
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS user_queries (
-            email TEXT,
-            date TEXT,
-            count INTEGER DEFAULT 0,
-            PRIMARY KEY (email, date)
-        )
-    """)
-
-    # Tabelle users
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            email TEXT PRIMARY KEY,
-            password_hash TEXT,
-            is_paid INTEGER DEFAULT 0,
-            created_at TEXT
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-    print("[DB] Initialisierung abgeschlossen.")
