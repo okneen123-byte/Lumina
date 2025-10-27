@@ -6,7 +6,7 @@ from datetime import datetime
 from passlib.hash import pbkdf2_sha256
 from config import DB_PATH
 
-# Logging (schreibt in Render-Logs)
+# Logging für Render-Debug
 logger = logging.getLogger("auth")
 if not logger.handlers:
     handler = logging.StreamHandler()
@@ -15,15 +15,11 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-
 EMAIL_RE = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
 
 
 def _get_conn():
-    """
-    Liefert eine SQLite-Verbindung. check_same_thread=False hilft in
-    manchen Deploy-Umgebungen mit Threading/Pool (Render/uvicorn).
-    """
+    """SQLite Verbindung, check_same_thread=False für Render/uvicorn kompatibel."""
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 
@@ -46,32 +42,24 @@ def _ensure_tables():
         conn.close()
 
 
-# sicherstellen, dass Tabelle existiert beim Modul-Import
+# Tabelle beim Modul-Import sicherstellen
 try:
     _ensure_tables()
 except Exception as e:
-    logger.exception("Fehler beim Erstellen/Prüfen der DB-Tabellen: %s", e)
+    logger.exception("Fehler beim Prüfen/Erstellen der users-Tabelle: %s", e)
 
 
 def create_user(email: str, password: str) -> bool:
-    """
-    Erstellt einen neuen Nutzer mit gehashtem Passwort.
-    Gibt True zurück bei Erfolg, False wenn der Nutzer schon existiert oder ein Fehler auftrat.
-    Validierung:
-      - email muss ein plausibles Format haben
-      - password muss nicht leer sein (Länge >= 1)
-    Hinweis: wir verwenden pbkdf2_sha256 (kein natives bcrypt-Backend erforderlich).
-    """
+    """Erstellt einen neuen Nutzer mit gehashtem Passwort."""
     if not email or not EMAIL_RE.match(email):
-        logger.info("create_user: ungültige E-Mail: %r", email)
+        logger.info("create_user: ungültige E-Mail %r", email)
         return False
-
-    if not password or not isinstance(password, str) or len(password) == 0:
-        logger.info("create_user: ungültiges Passwort (leer).")
+    if not password:
+        logger.info("create_user: leeres Passwort")
         return False
 
     try:
-        # Hash erzeugen (pbkdf2_sha256 kümmert sich um Salt & Iterationen)
+        # Passwort hashen mit pbkdf2_sha256
         pw_hash = pbkdf2_sha256.hash(password)
 
         conn = _get_conn()
@@ -86,19 +74,15 @@ def create_user(email: str, password: str) -> bool:
         logger.info("create_user: Benutzer %s erstellt.", email)
         return True
     except sqlite3.IntegrityError:
-        # bereits vorhanden
         logger.info("create_user: Benutzer %s existiert bereits.", email)
         return False
     except Exception as e:
-        # allgemeiner Fehler — loggen, aber nicht sensitive Daten preisgeben
         logger.exception("create_user: unerwarteter Fehler: %s", e)
         return False
 
 
 def verify_user(email: str, password: str) -> bool:
-    """
-    Überprüft E-Mail + Passwort. Gibt True zurück, wenn die Kombination stimmt.
-    """
+    """Überprüft E-Mail + Passwort. Gibt True zurück, wenn die Kombination stimmt."""
     if not email or not password:
         return False
 
@@ -124,7 +108,6 @@ def verify_user(email: str, password: str) -> bool:
                 logger.info("verify_user: Auth fehlgeschlagen für %s", email)
             return ok
         except Exception as e:
-            # kann auftreten wenn Hash beschädigt ist
             logger.exception("verify_user: Fehler beim Verifizieren: %s", e)
             return False
     except Exception as e:
@@ -133,7 +116,7 @@ def verify_user(email: str, password: str) -> bool:
 
 
 def set_paid(email: str) -> bool:
-    """Markiert einen Benutzer als bezahlt. Gibt True bei Erfolg zurück."""
+    """Markiert einen Benutzer als bezahlt."""
     if not email:
         return False
     try:
@@ -163,7 +146,6 @@ def is_paid(email: str) -> bool:
             row = cur.fetchone()
         finally:
             conn.close()
-
         if not row:
             return False
         return bool(row[0])
