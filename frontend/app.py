@@ -84,7 +84,7 @@ with st.expander(texts["welcome"] if st.session_state.logged_in else texts["logi
                     st.warning("Bitte E-Mail & Passwort eingeben." if st.session_state.lang == "de" else "Please enter email & password.")
                 else:
                     try:
-                        r = requests.post(f"{API_BASE}/login", json={"email": email, "password": password}, timeout=30)
+                        r = requests.post(f"{API_BASE}/login", json={"email": email, "password": password}, timeout=45)
                         if r.status_code == 200:
                             st.session_state.logged_in = True
                             st.session_state.email = email
@@ -104,7 +104,7 @@ with st.expander(texts["welcome"] if st.session_state.logged_in else texts["logi
                     st.warning("Bitte E-Mail & Passwort eingeben." if st.session_state.lang == "de" else "Please enter email & password.")
                 else:
                     try:
-                        r = requests.post(f"{API_BASE}/signup", json={"email": email, "password": password}, timeout=30)
+                        r = requests.post(f"{API_BASE}/signup", json={"email": email, "password": password}, timeout=45)
                         if r.status_code == 200:
                             st.success("Registrierung erfolgreich. Jetzt einloggen." if st.session_state.lang == "de" else "Signup successful. Please log in.")
                         else:
@@ -148,7 +148,7 @@ if st.button(texts["fetch"]):
                 "limit": limit
             }
             try:
-                resp = requests.post(f"{API_BASE}/news", json=payload, timeout=30)
+                resp = requests.post(f"{API_BASE}/news", json=payload, timeout=45)
                 try:
                     data = resp.json()
                 except ValueError:
@@ -175,3 +175,4 @@ if st.button(texts["fetch"]):
                         st.error(detail)
             except requests.exceptions.RequestException as e:
                 st.error(f"Fehler beim Abrufen: {e}")
+
