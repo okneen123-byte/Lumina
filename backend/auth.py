@@ -4,13 +4,13 @@ from passlib.hash import bcrypt
 from datetime import datetime
 from config import DB_PATH
 
+
 def create_user(email: str, password: str):
     """Erstellt einen neuen Nutzer mit gehashtem Passwort."""
     # Passwort prüfen (nicht leer & max. 72 Zeichen)
     if not password or len(password.encode("utf-8")) > 72:
         raise ValueError("Password must be 1–72 characters long.")
 
-    # Passwort hashen
     pw_hash = bcrypt.hash(password)
 
     conn = sqlite3.connect(DB_PATH)
@@ -55,11 +55,11 @@ def verify_user(email: str, password: str):
     try:
         return bcrypt.verify(password, pw_hash)
     except ValueError:
-        # Falls Passwort zu lang ist oder Formatfehler entsteht
         return False
 
 
 def set_paid(email: str):
+    """Markiert einen Benutzer als bezahlt."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE users SET is_paid=1 WHERE email=?", (email,))
@@ -68,6 +68,7 @@ def set_paid(email: str):
 
 
 def is_paid(email: str):
+    """Prüft, ob der Benutzer bezahlt ist."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT is_paid FROM users WHERE email=?", (email,))
@@ -76,4 +77,5 @@ def is_paid(email: str):
     if not row:
         return False
     return bool(row[0])
+
 
