@@ -54,25 +54,12 @@ def init_db():
         )
         """)
 
-        # USERS TABLE (zur Sicherheit, falls auth es nicht selbst erstellt)
-        c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            email TEXT PRIMARY KEY,
-            password_hash TEXT,
-            is_paid INTEGER DEFAULT 0,
-            created_at TEXT
-        )
-        """)
-
         conn.commit()
-        logger.info("✅ Datenbanktabellen erfolgreich initialisiert.")
+        logger.info("Datenbanktabellen erfolgreich initialisiert.")
     except Exception as e:
-        logger.exception("❌ Fehler beim Initialisieren der Datenbank: %s", e)
+        logger.exception("Fehler beim Initialisieren der Datenbank: %s", e)
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        conn.close()
 
 
 # ------------------- News speichern -------------------
@@ -81,7 +68,7 @@ def save_news_for_category(category="general", language="en"):
     try:
         articles = fetch_news_from_api(category=category, language=language, page_size=40)
         if not articles:
-            logger.info(f"ℹ Keine Artikel für Kategorie '{category}' gefunden.")
+            logger.info(f"Keine Artikel für Kategorie '{category}' gefunden.")
             return
 
         conn = _get_conn()
@@ -105,12 +92,12 @@ def save_news_for_category(category="general", language="en"):
                     language
                 ))
             except Exception as e:
-                logger.warning("⚠ Fehler beim Einfügen eines Artikels: %s", e)
+                logger.warning("Fehler beim Einfügen eines Artikels: %s", e)
 
         conn.commit()
-        logger.info(f"✅ News für Kategorie '{category}' gespeichert.")
+        logger.info(f"News für Kategorie '{category}' gespeichert.")
     except Exception as e:
-        logger.exception("❌ save_news_for_category DB-Fehler: %s", e)
+        logger.exception("save_news_for_category DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
@@ -152,9 +139,9 @@ def get_news(category="general", language="en", sort_by="newest", limit=50):
                 "importance": float(r[5]) if r[5] is not None else 0.0
             })
 
-        logger.info(f"✅ {len(news)} News für Kategorie '{category}' geladen.")
+        logger.info(f"{len(news)} News für Kategorie '{category}' geladen.")
     except Exception as e:
-        logger.exception("❌ get_news DB-Fehler: %s", e)
+        logger.exception("get_news DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
@@ -184,9 +171,9 @@ def increment_user_query(email: str):
             c.execute("INSERT INTO user_queries (email, date, count) VALUES (?, ?, ?)", (email, today, count))
 
         conn.commit()
-        logger.info(f"👤 {email}: Query-Count = {count}")
+        logger.info(f"User {email}: Query-Count = {count}")
     except Exception as e:
-        logger.exception("❌ increment_user_query DB-Fehler: %s", e)
+        logger.exception("increment_user_query DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
@@ -208,7 +195,7 @@ def get_user_query_count_today(email: str):
         if row:
             count = row[0]
     except Exception as e:
-        logger.exception("❌ get_user_query_count_today DB-Fehler: %s", e)
+        logger.exception("get_user_query_count_today DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
@@ -216,10 +203,5 @@ def get_user_query_count_today(email: str):
             pass
 
     return count
-
-
-# ------------------- Automatische Initialisierung -------------------
-if __name__ == "__main__":
-    init_db()
 
 
