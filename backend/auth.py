@@ -75,4 +75,5 @@ def is_paid(email: str):
     conn.close()
     if not row:
         return False
-    return bool(row[0])
+    return bool(row[0])
+
