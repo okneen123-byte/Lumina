@@ -219,6 +219,7 @@ def get_user_query_count_today(email: str):
 
 
 # ------------------- Automatische Initialisierung -------------------
-if __name__ == "_main_":
+if __name__ == "__main__":
     init_db()
+
 
