@@ -1,4 +1,4 @@
-# bac# backend/scheduler.py
+# backend/scheduler.py
 from apscheduler.schedulers.background import BackgroundScheduler
 from backend.database import save_news_for_category
 from config import UPDATE_INTERVAL_HOURS
@@ -37,3 +37,4 @@ def start_scheduler():
             update_all()
         except Exception as e:
             print(f"[Scheduler] Erster Start fehlgeschlagen: {e}")
+
