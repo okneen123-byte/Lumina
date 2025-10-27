@@ -4,9 +4,9 @@ import requests
 from datetime import datetime
 
 # ---------- Config ----------
-API_BASE = st.secrets.get("API_BASE") or "http://127.0.0.1:8000"  # In Produktion: setze Streamlit secret API_BASE auf dein Backend-URL
+API_BASE = st.secrets.get("API_BASE") or "http://127.0.0.1:8000"
 CATEGORIES = ["general", "technology", "business", "sports", "science", "entertainment"]
-LANGS = {"Deutsch":"de", "English":"en"}
+LANGS = {"Deutsch": "de", "English": "en"}
 
 # ---------- Texts (DE/EN) ----------
 TEXT = {
@@ -60,13 +60,12 @@ if "lang" not in st.session_state:
 
 # ---------- Layout ----------
 st.set_page_config(page_title="Lumina News KI", layout="wide")
-col1, col2 = st.columns([3,1])
+col1, col2 = st.columns([3, 1])
 with col1:
     st.markdown(f"## {TEXT[st.session_state.lang]['title']}")
     st.write(TEXT[st.session_state.lang]['subtitle'])
 with col2:
-    # language switch
-    choice = st.selectbox(" ", list(LANGS.keys()), index=0 if st.session_state.lang=="de" else 1)
+    choice = st.selectbox(" ", list(LANGS.keys()), index=0 if st.session_state.lang == "de" else 1)
     st.session_state.lang = LANGS[choice]
 
 texts = TEXT[st.session_state.lang]
@@ -74,36 +73,46 @@ texts = TEXT[st.session_state.lang]
 # ---------- Auth box ----------
 with st.expander(texts["welcome"] if st.session_state.logged_in else texts["login"], expanded=True):
     if not st.session_state.logged_in:
-        # login or signup
         col_a, col_b = st.columns(2)
         with col_a:
             email = st.text_input(texts["email"], key="input_email")
             password = st.text_input(texts["password"], type="password", key="input_password")
         with col_b:
+            # LOGIN BUTTON
             if st.button(texts["login"]):
                 if not email or not password:
-                    st.warning("Bitte E-Mail & Passwort eingeben." if st.session_state.lang=="de" else "Please enter email & password.")
+                    st.warning("Bitte E-Mail & Passwort eingeben." if st.session_state.lang == "de" else "Please enter email & password.")
                 else:
                     try:
-                        r = requests.post(f"{API_BASE}/login", json={"email": email, "password": password}, timeout=45)
+                        r = requests.post(f"{API_BASE}/login", json={"email": email, "password": password}, timeout=30)
                         if r.status_code == 200:
                             st.session_state.logged_in = True
                             st.session_state.email = email
-                            st.success("Erfolgreich eingeloggt." if st.session_state.lang=="de" else "Logged in successfully.")
+                            st.success("Erfolgreich eingeloggt." if st.session_state.lang == "de" else "Logged in successfully.")
                         else:
-                            st.error(r.json().get("detail","Login failed."))
+                            try:
+                                msg = r.json().get("detail", "Login failed.")
+                            except Exception:
+                                msg = f"Serverfehler ({r.status_code})"
+                            st.error(msg)
                     except Exception as e:
                         st.error(f"Fehler: {e}")
+
+            # SIGNUP BUTTON
             if st.button(texts["signup"]):
                 if not email or not password:
-                    st.warning("Bitte E-Mail & Passwort eingeben." if st.session_state.lang=="de" else "Please enter email & password.")
+                    st.warning("Bitte E-Mail & Passwort eingeben." if st.session_state.lang == "de" else "Please enter email & password.")
                 else:
                     try:
-                        r = requests.post(f"{API_BASE}/signup", json={"email": email, "password": password}, timeout=45)
+                        r = requests.post(f"{API_BASE}/signup", json={"email": email, "password": password}, timeout=30)
                         if r.status_code == 200:
-                            st.success("Registrierung erfolgreich. Jetzt einloggen." if st.session_state.lang=="de" else "Signup successful. Please log in.")
+                            st.success("Registrierung erfolgreich. Jetzt einloggen." if st.session_state.lang == "de" else "Signup successful. Please log in.")
                         else:
-                            st.error(r.json().get("detail","Signup failed."))
+                            try:
+                                msg = r.json().get("detail", "Signup failed.")
+                            except Exception:
+                                msg = f"Serverfehler ({r.status_code})"
+                            st.error(msg)
                     except Exception as e:
                         st.error(f"Fehler: {e}")
     else:
@@ -112,23 +121,23 @@ with st.expander(texts["welcome"] if st.session_state.logged_in else texts["logi
             st.session_state.logged_in = False
             st.session_state.email = ""
 
+# ---------- Sidebar ----------
 st.sidebar.header(texts["category"])
 category = st.sidebar.selectbox("", CATEGORIES)
 lang_label = st.sidebar.selectbox(texts["language"], list(LANGS.keys()))
 language = LANGS[lang_label]
 sort_choice = st.sidebar.selectbox(texts["sort"], [texts["sort_newest"], texts["sort_importance"]])
-sort_by = "newest" if sort_choice==texts["sort_newest"] else "importance"
+sort_by = "newest" if sort_choice == texts["sort_newest"] else "importance"
 limit = st.sidebar.slider("Anzahl Artikel", 5, 50, 20)
 
 # ---------- Fetch button ----------
 if st.button(texts["fetch"]):
     if not st.session_state.logged_in:
-        st.warning("Bitte einloggen." if st.session_state.lang=="de" else "Please log in.")
+        st.warning("Bitte einloggen." if st.session_state.lang == "de" else "Please log in.")
     else:
-        # Passwort prüfen
         pwd = st.session_state.get("input_password", None)
         if not pwd:
-            st.warning("Passwort nicht verfügbar. Bitte erneut einloggen." if st.session_state.lang=="de" else "Password not available. Please log in.")
+            st.warning("Passwort nicht verfügbar. Bitte erneut einloggen." if st.session_state.lang == "de" else "Password not available. Please log in.")
         else:
             payload = {
                 "email": st.session_state.email,
@@ -139,11 +148,11 @@ if st.button(texts["fetch"]):
                 "limit": limit
             }
             try:
-                resp = requests.post(f"{API_BASE}/news", json=payload, timeout=45)
+                resp = requests.post(f"{API_BASE}/news", json=payload, timeout=30)
                 try:
                     data = resp.json()
                 except ValueError:
-                    st.error("Ungültige Antwort vom Server.")
+                    st.error("Ungültige Antwort vom Server (kein JSON).")
                     data = {}
                 if resp.status_code == 200:
                     news = data.get("news", [])
@@ -152,18 +161,17 @@ if st.button(texts["fetch"]):
                     else:
                         for n in news:
                             with st.container():
-                                st.markdown(f"### [{n['title']}]({n['url']})")
-                                st.write(f"{n.get('source','')}, {n.get('published_at','')}")
+                                st.markdown(f"### [{n.get('title', 'Untitled')}]({n.get('url', '#')})")
+                                st.write(f"{n.get('source', '')}, {n.get('published_at', '')}")
                                 importance = n.get("importance", 0)
-                                st.progress(int(importance*100))
-                                st.write(n.get("description",""))
+                                st.progress(int(importance * 100))
+                                st.write(n.get("description", ""))
                                 st.markdown("---")
                 else:
-                    detail = data.get("detail", "Fehler")
+                    detail = data.get("detail", f"Fehler ({resp.status_code})")
                     if resp.status_code == 403 and "Free trial limit" in detail:
                         st.error(texts["trial_exhausted"])
                     else:
                         st.error(detail)
             except requests.exceptions.RequestException as e:
                 st.error(f"Fehler beim Abrufen: {e}")
-
