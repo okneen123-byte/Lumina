@@ -1,19 +1,46 @@
-# config.py
-# ========== Füge hier deine echten Keys ein ==========
+import sqlite3
+from config import DB_PATH
 
-# NewsAPI (https://newsapi.org) - Key (Test/Prod)
-NEWS_API_KEY = "DEIN_NEWSAPI_KEY_HIER"
+def init_db():
+    """Initialisiert oder repariert die Datenbank automatisch."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
 
-# Scheduler: Stunden zwischen Updates
-UPDATE_INTERVAL_HOURS = 4  # 4 Stunden wie gewünscht
+    # Tabelle news
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            description TEXT,
+            url TEXT,
+            source TEXT,
+            category TEXT,
+            language TEXT,
+            importance REAL DEFAULT 0,
+            published_at TEXT
+        )
+    """)
 
-# Free Trial Limit (pro Tag)
-FREE_TRIAL_LIMIT = 10
+    # Tabelle user_queries
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS user_queries (
+            email TEXT,
+            date TEXT,
+            count INTEGER DEFAULT 0,
+            PRIMARY KEY (email, date)
+        )
+    """)
 
-# Optional: Stripe - falls du später Zahlungen integrieren willst
-STRIPE_SECRET_KEY = "sk_test_DEIN_KEY"
-STRIPE_PUBLISHABLE_KEY = "pk_test_DEIN_KEY"
-PAID_PLAN_PRICE_ID = "price_123456789"
+    # Tabelle users
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            email TEXT PRIMARY KEY,
+            password_hash TEXT,
+            is_paid INTEGER DEFAULT 0,
+            created_at TEXT
+        )
+    """)
 
-# DB Pfad (relativ zum Projekt)
-DB_PATH = "backend/news.db"
+    conn.commit()
+    conn.close()
+    print("[DB] Initialisierung abgeschlossen.")
