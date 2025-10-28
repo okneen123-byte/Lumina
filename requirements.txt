@@ -8,4 +8,5 @@ python-jose[cryptography]
 python-dateutil
 pydantic
 gunicorn
+newsdataapi==0.1.1
 
