@@ -50,6 +50,4 @@ def compute_importance(article):
         score += len(article["description"]) / 100
     if article.get("title"):
         score += len(article["title"]) / 50
-    return round(min(score, 10.0), 2)
-
-
+    return round(min(score, 10.0), 2)
