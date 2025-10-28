@@ -1,28 +1,45 @@
 # backend/news_api.py
-from newsdataapi import NewsDataAPIClient
+import requests
+from config import NEWS_API_KEY
+from datetime import datetime
 
-# API-Key
-NEWS_API_KEY = "pub_61224dd3e7214d59b44bf40b85f1858f"
-api = NewsDataAPIClient(apikey=NEWS_API_KEY)
-
-def fetch_news_from_api(query="general", language="en", page_size=20):
+def fetch_news_from_api(query="general", language="en", page_size=40):
     """
-    Ruft die neuesten Nachrichten von NewsData.io ab.
+    Holt News von NewsData.io (kostenlose API) zurück.
+    query: Kategorie oder Schlagwort
+    language: 'en' oder 'de'
+    page_size: Anzahl Artikel pro Abruf
     """
+    url = f"https://newsdata.io/api/1/news?apikey={NEWS_API_KEY}&q={query}&language={language}&page=0"
+    
     try:
-        response = api.news_api(q=query, language=language, page_size=page_size)
-        articles = response.get("articles", [])
-        if not articles:
-            return []
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        articles = []
+
+        for item in data.get("results", []):
+            articles.append({
+                "title": item.get("title", ""),
+                "description": item.get("description", ""),
+                "url": item.get("link", ""),
+                "source": item.get("source_id", ""),
+                "published_at": item.get("pubDate", datetime.utcnow().isoformat())
+            })
+
         return articles
     except Exception as e:
-        print(f"Fehler beim Abrufen der News: {e}")
+        print("Fehler beim Abrufen der News:", e)
         return []
 
 def compute_importance(article):
     """
-    Optional: Berechnet die Wichtigkeit eines Artikels.
-    Beispiel: Je länger der Titel, desto wichtiger.
+    Berechnet Importance Score.
+    Momentan simple Dummy-Logik:
+    - längere Titel → etwas höher
     """
-    title = article.get("title", "")
-    return min(len(title) / 50.0, 1.0)
+    if not article.get("title"):
+        return 0.0
+    score = len(article["title"]) / 100
+    return round(score, 2)
+
