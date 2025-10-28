@@ -2,7 +2,7 @@
 # ========== Füge hier deine echten Keys ein ==========
 
 # NewsAPI (https://newsapi.org) - Key (Test/Prod)
-NEWS_API_KEY = "DEIN_NEWSAPI_KEY_HIER"
+NEWS_API_KEY = "46be1a687fdf44a7871f4e82e0a2b505"
 
 # Scheduler: Stunden zwischen Updates
 UPDATE_INTERVAL_HOURS = 4  # 4 Stunden wie gewünscht
@@ -17,3 +17,4 @@ PAID_PLAN_PRICE_ID = "price_123456789"
 
 # DB Pfad (relativ zum Projekt)
 DB_PATH = "backend/news.db"
+
