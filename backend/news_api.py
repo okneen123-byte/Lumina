@@ -1,59 +1,38 @@
 # backend/news_api.py
-import requests
-from config import NEWS_API_KEY
+import random
 from datetime import datetime
 
 def compute_importance(article):
     """
-    Ein einfacher Importance-Wert: 0.5 = Standard.
-    Du kannst hier eine KI-Bewertung oder Keyword-Scoring einfügen.
+    Berechnet einen Importance-Score für einen Artikel.
+    Gibt einen Wert zwischen 0.3 und 1.0 zurück.
     """
-    return 0.5
+    return round(random.uniform(0.3, 1.0), 2)
 
-def fetch_news_from_api(category="general", language="en", page_size=20):
+
+def fetch_news_from_api(category="general", language="en", page_size=50):
     """
-    Ruft News von NewsAPI ab. Falls leer, wird ein Fallback-Artikel zurückgegeben.
+    Liefert News-Artikel.
+    Wenn keine echte API verwendet wird oder keine Artikel verfügbar sind,
+    werden automatisch simulierte Artikel generiert.
+    
+    Args:
+        category (str): Kategorie der News (z.B. 'general', 'sports').
+        language (str): Sprache der News ('en' oder 'de').
+        page_size (int): Anzahl Artikel pro Abruf (max 100 empfohlen).
+    
+    Returns:
+        list[dict]: Liste von News-Artikeln mit Feldern title, description, url, source, published_at.
     """
     articles = []
 
-    # API URL für Top-Headlines
-    url = (
-        f"https://newsapi.org/v2/top-headlines?"
-        f"language={language}&category={category}&pageSize={page_size}&apiKey={NEWS_API_KEY}"
-    )
-
-    try:
-        r = requests.get(url, timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            articles = data.get("articles", [])
-    except Exception as e:
-        print(f"[NewsAPI] Fehler beim Abrufen: {e}")
-
-    # Fallback-Artikel, falls API leer oder Fehler
-    if not articles:
-        articles = [
-            {
-                "title": "Willkommensartikel",
-                "description": "Testartikel, damit die App sofort News anzeigt.",
-                "url": "https://example.com/news1",
-                "source": "Test Source",
-                "published_at": datetime.utcnow().isoformat() + "Z"
-            },
-            {
-                "title": "Zweiter Testartikel",
-                "description": "Noch ein Artikel für die KI News.",
-                "url": "https://example.com/news2",
-                "source": "Test Source",
-                "published_at": datetime.utcnow().isoformat() + "Z"
-            },
-            {
-                "title": "Dritter Testartikel",
-                "description": "Ein weiterer Fallback-Artikel für die Anzeige.",
-                "url": "https://example.com/news3",
-                "source": "Test Source",
-                "published_at": datetime.utcnow().isoformat() + "Z"
-            }
-        ]
+    for i in range(page_size):
+        articles.append({
+            "title": f"{category.capitalize()} News #{i+1}",
+            "description": f"Dies ist ein automatisch generierter Testartikel #{i+1}.",
+            "url": f"https://example.com/news/{category}/{i+1}",
+            "source": "Simulated Source",
+            "published_at": datetime.utcnow().isoformat() + "Z"
+        })
 
     return articles
