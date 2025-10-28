@@ -204,4 +204,3 @@ def get_user_query_count_today(email: str):
 
     return count
 
-
