@@ -15,10 +15,9 @@ logger.setLevel(logging.INFO)
 def fetch_news_from_api(category="general", language="en", page_size=40):
     """Holt aktuelle News von der NewsAPI."""
     url = (
-        f"https://newsapi.org/v2/top-headlines?"
-        f"category={category}&language={language}&pageSize={page_size}&apiKey={NEWS_API_KEY}"
+    f"https://newsapi.org/v2/top-headlines?"
+    f"country=us&pageSize={page_size}&apiKey={NEWS_API_KEY}"
     )
-
     try:
         response = requests.get(url, timeout=15)
         response.raise_for_status()
@@ -51,3 +50,4 @@ def compute_importance(article):
     if article.get("title"):
         score += len(article["title"]) / 50
     return round(min(score, 10.0), 2)
+
