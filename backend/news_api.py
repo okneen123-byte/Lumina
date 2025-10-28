@@ -1,7 +1,7 @@
 # backend/news_api.py
 import requests
-from config import NEWS_API_KEY
 import logging
+from config import NEWS_API_KEY
 
 logger = logging.getLogger("news_api")
 if not logger.handlers:
@@ -12,42 +12,44 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 
 
-def fetch_news_from_api(category="general", language="en", page_size=40):
-    """Holt aktuelle News von der NewsAPI."""
+def fetch_news_from_api(category="general", language="en", page_size=20):
+    """Lädt News von NewsAPI, liefert bei Free-Key-Limit Fallback-Artikel."""
     url = (
-    f"https://newsapi.org/v2/top-headlines?"
-    f"country=us&pageSize={page_size}&apiKey={NEWS_API_KEY}"
+        f"https://newsapi.org/v2/top-headlines?"
+        f"country=us&category={category}&pageSize={page_size}&apiKey={NEWS_API_KEY}"
     )
     try:
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        data = response.json()
+        r = requests.get(url, timeout=10)
+        data = r.json()
         articles = data.get("articles", [])
-
-        results = []
-        for a in articles:
-            results.append({
-                "title": a.get("title", ""),
-                "description": a.get("description", ""),
-                "url": a.get("url", ""),
-                "source": a.get("source", {}).get("name", ""),
-                "published_at": a.get("publishedAt", "")
-            })
-
-        logger.info(f"{len(results)} Artikel von API geladen ({category}, {language})")
-        return results
-
+        if not articles:
+            logger.info("Keine echten Artikel von API erhalten, Fallback wird genutzt.")
+            articles = [{
+                "title": "Test News",
+                "description": "Dies ist ein Testartikel, da Free-Key keine News liefert.",
+                "url": "https://example.com/test",
+                "source": "Test Source",
+                "published_at": "2025-10-28T12:00:00Z"
+            }]
+        else:
+            logger.info(f"{len(articles)} Artikel von NewsAPI geladen.")
+        return articles
     except Exception as e:
-        logger.exception("Fehler beim Abrufen der News: %s", e)
-        return []
+        logger.exception("Fehler beim Laden von NewsAPI, Fallback wird genutzt: %s", e)
+        return [{
+            "title": "Test News",
+            "description": "API Request fehlgeschlagen, Testartikel.",
+            "url": "https://example.com/test",
+            "source": "Test Source",
+            "published_at": "2025-10-28T12:00:00Z"
+        }]
 
 
 def compute_importance(article):
-    """Berechnet einen einfachen Wichtigkeitswert für Artikel."""
-    score = 0.0
-    if article.get("description"):
-        score += len(article["description"]) / 100
-    if article.get("title"):
-        score += len(article["title"]) / 50
-    return round(min(score, 10.0), 2)
-
+    """Berechnet Wichtigkeit basierend auf Titel- und Beschreibungslänge."""
+    score = 0
+    title = article.get("title") or ""
+    description = article.get("description") or ""
+    score += len(title) / 50  # kurze Titel = kleiner Score
+    score += len(description) / 200  # kurze Beschreibung = kleiner Score
+    return round(score, 2)
