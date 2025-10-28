@@ -14,12 +14,10 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-
 # ------------------- DB-Verbindung -------------------
 def _get_conn():
     """Erstellt eine SQLite-Verbindung, kompatibel mit Render/uvicorn."""
     return sqlite3.connect(DB_PATH, check_same_thread=False)
-
 
 # ------------------- Initialisierung -------------------
 def init_db():
@@ -28,7 +26,7 @@ def init_db():
         conn = _get_conn()
         c = conn.cursor()
 
-        # NEWS TABLE
+        # News-Tabelle
         c.execute("""
         CREATE TABLE IF NOT EXISTS news (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,13 +42,13 @@ def init_db():
         )
         """)
 
-        # USER_QUERIES TABLE (für Free Trial)
+        # User Queries Tabelle (Free Trial)
         c.execute("""
         CREATE TABLE IF NOT EXISTS user_queries (
             email TEXT NOT NULL,
             date TEXT NOT NULL,
             count INTEGER DEFAULT 0,
-            PRIMARY KEY (email, date)
+            PRIMARY KEY(email, date)
         )
         """)
 
@@ -61,12 +59,11 @@ def init_db():
     finally:
         conn.close()
 
-
 # ------------------- News speichern -------------------
 def save_news_for_category(category="general", language="en"):
-    """Lädt News aus der API und speichert sie in der Datenbank."""
+    """Lädt News aus der API und speichert sie in der DB."""
     try:
-        articles = fetch_news_from_api(category=category, language=language, page_size=40)
+        articles = fetch_news_from_api(query=category, language=language, page_size=40)
         if not articles:
             logger.info(f"Keine Artikel für Kategorie '{category}' gefunden.")
             return
@@ -104,21 +101,14 @@ def save_news_for_category(category="general", language="en"):
         except Exception:
             pass
 
-
 # ------------------- News abrufen -------------------
 def get_news(category="general", language="en", sort_by="newest", limit=50):
-    """Holt News aus der Datenbank."""
     news = []
     try:
         conn = _get_conn()
         c = conn.cursor()
 
-        order_clause = (
-            "ORDER BY datetime(published_at) DESC"
-            if sort_by == "newest"
-            else "ORDER BY importance DESC, datetime(published_at) DESC"
-        )
-
+        order_clause = "ORDER BY datetime(published_at) DESC" if sort_by == "newest" else "ORDER BY importance DESC, datetime(published_at) DESC"
         query = f"""
         SELECT title, description, url, source, published_at, importance
         FROM news
@@ -150,26 +140,21 @@ def get_news(category="general", language="en", sort_by="newest", limit=50):
 
     return news
 
-
 # ------------------- Free-Trial Counter -------------------
 def increment_user_query(email: str):
-    """Erhöht den täglichen Anfragezähler des Nutzers."""
     today = date.today().isoformat()
     count = 0
     try:
         conn = _get_conn()
         c = conn.cursor()
-
         c.execute("SELECT count FROM user_queries WHERE email=? AND date=?", (email, today))
         row = c.fetchone()
-
         if row:
             count = row[0] + 1
             c.execute("UPDATE user_queries SET count=? WHERE email=? AND date=?", (count, email, today))
         else:
             count = 1
             c.execute("INSERT INTO user_queries (email, date, count) VALUES (?, ?, ?)", (email, today, count))
-
         conn.commit()
         logger.info(f"User {email}: Query-Count = {count}")
     except Exception as e:
@@ -179,12 +164,9 @@ def increment_user_query(email: str):
             conn.close()
         except Exception:
             pass
-
     return count
 
-
 def get_user_query_count_today(email: str):
-    """Gibt zurück, wie viele Anfragen der Nutzer heute gemacht hat."""
     today = date.today().isoformat()
     count = 0
     try:
@@ -201,6 +183,4 @@ def get_user_query_count_today(email: str):
             conn.close()
         except Exception:
             pass
-
     return count
-
