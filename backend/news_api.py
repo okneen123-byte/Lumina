@@ -2,7 +2,7 @@
 import requests
 from dateutil import parser as dateparser
 from datetime import datetime, timezone
-from config import NEWS_API_KEY
+from config import "46be1a687fdf44a7871f4e82e0a2b505"
 
 # Keywords, die die Wichtigkeit erhöhen
 IMPORTANCE_KEYWORDS = [
@@ -69,3 +69,4 @@ def compute_importance(article):
     # normalize to 0..1
     score = max(0.0, min(1.0, score))
     return score
+
