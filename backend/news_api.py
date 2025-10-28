@@ -1,45 +1,55 @@
 # backend/news_api.py
+import os
 import requests
-from config import NEWS_API_KEY
 from datetime import datetime
 
-def fetch_news_from_api(query="general", language="en", page_size=40):
-    """
-    Holt News von NewsData.io (kostenlose API) zurück.
-    query: Kategorie oder Schlagwort
-    language: 'en' oder 'de'
-    page_size: Anzahl Artikel pro Abruf
-    """
-    url = f"https://newsdata.io/api/1/news?apikey={NEWS_API_KEY}&q={query}&language={language}&page=0"
-    
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        articles = []
+# NewsDataAPI Key aus Environment Secret
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
-        for item in data.get("results", []):
+if not NEWS_API_KEY:
+    raise RuntimeError("NEWS_API_KEY nicht gesetzt! Bitte als Secret bei Render hinzufügen.")
+
+def fetch_news_from_api(category="general", language="en", page_size=40):
+    """
+    Ruft News von NewsDataAPI ab.
+    category: 'general', 'technology', 'business', etc.
+    language: 'en' oder 'de'
+    page_size: Anzahl Artikel
+    """
+    url = (
+        f"https://newsdata.io/api/1/news?"
+        f"apikey={NEWS_API_KEY}&language={language}&category={category}&page={1}"
+    )
+
+    try:
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+
+        articles = []
+        for a in data.get("results", []):
             articles.append({
-                "title": item.get("title", ""),
-                "description": item.get("description", ""),
-                "url": item.get("link", ""),
-                "source": item.get("source_id", ""),
-                "published_at": item.get("pubDate", datetime.utcnow().isoformat())
+                "title": a.get("title", ""),
+                "description": a.get("description", ""),
+                "url": a.get("link", ""),
+                "source": a.get("source_id", ""),
+                "published_at": a.get("pubDate", datetime.utcnow().isoformat())
             })
 
-        return articles
+        return articles[:page_size]
+
     except Exception as e:
-        print("Fehler beim Abrufen der News:", e)
+        print(f"[NewsAPI] Fehler beim Abrufen der News: {e}")
         return []
 
-def compute_importance(article):
+def compute_importance(article: dict) -> float:
     """
-    Berechnet Importance Score.
-    Momentan simple Dummy-Logik:
-    - längere Titel → etwas höher
+    Dummy-Berechnung der Wichtigkeit.
+    Du kannst hier beliebige Logik einfügen.
     """
-    if not article.get("title"):
-        return 0.0
-    score = len(article["title"]) / 100
-    return round(score, 2)
-
+    score = 0.0
+    if article.get("title"):
+        score += 1.0
+    if article.get("description"):
+        score += 0.5
+    return score
