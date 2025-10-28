@@ -4,8 +4,9 @@ import logging
 from datetime import date
 from config import DB_PATH
 from backend.news_api import fetch_news_from_api, compute_importance
+from backend.personalization import compute_relevance_score, get_user_preferences
 
-# Logging
+# ------------------- Logging -------------------
 logger = logging.getLogger("database")
 if not logger.handlers:
     handler = logging.StreamHandler()
@@ -14,89 +15,119 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-# DB-Verbindung
+
+# ------------------- DB-Verbindung -------------------
 def _get_conn():
+    """Erstellt eine SQLite-Verbindung."""
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
-# Initialisierung
+
+# ------------------- Initialisierung -------------------
 def init_db():
-    """Erstellt Tabellen, falls sie fehlen"""
+    """Erstellt alle benötigten Tabellen, falls sie fehlen."""
     try:
         conn = _get_conn()
         c = conn.cursor()
+
         c.execute("""
-            CREATE TABLE IF NOT EXISTS news (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category TEXT,
-                title TEXT,
-                description TEXT,
-                url TEXT UNIQUE,
-                source TEXT,
-                published_at TEXT,
-                importance REAL,
-                language TEXT,
-                saved_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
+        CREATE TABLE IF NOT EXISTS news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT,
+            title TEXT,
+            description TEXT,
+            url TEXT UNIQUE,
+            source TEXT,
+            published_at TEXT,
+            importance REAL,
+            language TEXT,
+            saved_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
         """)
+
         c.execute("""
-            CREATE TABLE IF NOT EXISTS user_queries (
-                email TEXT NOT NULL,
-                date TEXT NOT NULL,
-                count INTEGER DEFAULT 0,
-                PRIMARY KEY(email, date)
-            )
+        CREATE TABLE IF NOT EXISTS user_queries (
+            email TEXT NOT NULL,
+            date TEXT NOT NULL,
+            count INTEGER DEFAULT 0,
+            PRIMARY KEY (email, date)
+        )
         """)
+
         conn.commit()
-        logger.info("Datenbank initialisiert.")
+        logger.info("Datenbanktabellen erfolgreich initialisiert.")
     except Exception as e:
-        logger.exception(f"DB-Init Fehler: {e}")
+        logger.exception("Fehler beim Initialisieren der Datenbank: %s", e)
     finally:
         conn.close()
 
-# News speichern
+
+# ------------------- News speichern -------------------
 def save_news_for_category(category="general", language="en"):
+    """Lädt News aus der API und speichert sie in der Datenbank."""
     try:
-        articles = fetch_news_from_api(category, language)
+        articles = fetch_news_from_api(category=category, language=language, page_size=40)
         if not articles:
-            logger.info(f"Keine News für Kategorie '{category}'")
+            logger.info(f"Keine Artikel für Kategorie '{category}' gefunden.")
             return
+
         conn = _get_conn()
         c = conn.cursor()
+
         for a in articles:
-            importance = compute_importance(a)
             try:
+                importance = compute_importance(a)
                 c.execute("""
                     INSERT OR IGNORE INTO news
                     (category, title, description, url, source, published_at, importance, language)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    category, a["title"], a["description"], a["url"],
-                    a["source"], a["published_at"], importance, language
+                    category,
+                    a.get("title", ""),
+                    a.get("description", ""),
+                    a.get("url", ""),
+                    a.get("source", ""),
+                    a.get("published_at", ""),
+                    importance,
+                    language
                 ))
             except Exception as e:
-                logger.warning(f"Artikel Insert Fehler: {e}")
+                logger.warning("Fehler beim Einfügen eines Artikels: %s", e)
+
         conn.commit()
-        logger.info(f"{len(articles)} News für '{category}' gespeichert.")
+        logger.info(f"News für Kategorie '{category}' gespeichert.")
     except Exception as e:
-        logger.exception(f"save_news Fehler: {e}")
+        logger.exception("save_news_for_category DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
-        except:
+        except Exception:
             pass
 
-# News abrufen
+
+# ------------------- News abrufen -------------------
 def get_news(category="general", language="en", sort_by="newest", limit=50):
+    """Holt News aus der Datenbank."""
     news = []
     try:
         conn = _get_conn()
         c = conn.cursor()
-        order = "ORDER BY datetime(published_at) DESC" if sort_by=="newest" else "ORDER BY importance DESC, datetime(published_at) DESC"
-        c.execute(f"""
-            SELECT title, description, url, source, published_at, importance
-            FROM news WHERE category=? AND language=? {order} LIMIT ?
-        """, (category, language, limit))
+
+        order_clause = (
+            "ORDER BY datetime(published_at) DESC"
+            if sort_by == "newest"
+            else "ORDER BY importance DESC, datetime(published_at) DESC"
+        )
+
+        query = f"""
+        SELECT title, description, url, source, published_at, importance
+        FROM news
+        WHERE category=? AND language=?
+        {order_clause}
+        LIMIT ?
+        """
+        c.execute(query, (category, language, limit))
         rows = c.fetchall()
+
         for r in rows:
             news.append({
                 "title": r[0],
@@ -104,51 +135,57 @@ def get_news(category="general", language="en", sort_by="newest", limit=50):
                 "url": r[2],
                 "source": r[3],
                 "published_at": r[4],
-                "importance": float(r[5]) if r[5] else 0
+                "importance": float(r[5]) if r[5] else 0.0
             })
+
+        logger.info(f"{len(news)} News für Kategorie '{category}' geladen.")
     except Exception as e:
-        logger.exception(f"get_news Fehler: {e}")
+        logger.exception("get_news DB-Fehler: %s", e)
     finally:
-        try: conn.close()
-        except: pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+
     return news
 
-# Free-Trial Counter
-def increment_user_query(email: str):
-    today = date.today().isoformat()
-    count = 0
-    try:
-        conn = _get_conn()
-        c = conn.cursor()
-        c.execute("SELECT count FROM user_queries WHERE email=? AND date=?", (email, today))
-        row = c.fetchone()
-        if row:
-            count = row[0]+1
-            c.execute("UPDATE user_queries SET count=? WHERE email=? AND date=?", (count,email,today))
-        else:
-            count = 1
-            c.execute("INSERT INTO user_queries (email,date,count) VALUES (?,?,?)",(email,today,count))
-        conn.commit()
-    except Exception as e:
-        logger.exception(f"increment_user_query Fehler: {e}")
-    finally:
-        try: conn.close()
-        except: pass
-    return count
 
-def get_user_query_count_today(email: str):
-    today = date.today().isoformat()
-    count = 0
+# ------------------- Personalisierte News -------------------
+def get_personalized_news(email: str, limit=30):
+    """Holt personalisierte News basierend auf Interessen."""
+    prefs = get_user_preferences(email)
+    if not prefs:
+        logger.info(f"Keine Interessen für {email} gespeichert.")
+        return []
+
     try:
         conn = _get_conn()
         c = conn.cursor()
-        c.execute("SELECT count FROM user_queries WHERE email=? AND date=?", (email,today))
-        row = c.fetchone()
-        if row:
-            count = row[0]
+        c.execute("""
+            SELECT title, description, url, source, published_at
+            FROM news
+            ORDER BY datetime(published_at) DESC
+            LIMIT 100
+        """)
+        rows = c.fetchall()
     except Exception as e:
-        logger.exception(f"get_user_query_count_today Fehler: {e}")
+        logger.exception("get_personalized_news DB-Fehler: %s", e)
+        return []
     finally:
-        try: conn.close()
-        except: pass
-    return count
+        conn.close()
+
+    scored_news = []
+    for r in rows:
+        score = compute_relevance_score(r[0] or "", r[1] or "", prefs)
+        if score > 0.25:
+            scored_news.append({
+                "title": r[0],
+                "description": r[1],
+                "url": r[2],
+                "source": r[3],
+                "published_at": r[4],
+                "relevance_score": score
+            })
+
+    scored_news.sort(key=lambda x: x["relevance_score"], reverse=True)
+    return scored_news[:limit]
