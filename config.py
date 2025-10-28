@@ -1,20 +1,13 @@
 # config.py
-# ========== Füge hier deine echten Keys ein ==========
 
-# NewsAPI (https://newsapi.org) - Key (Test/Prod)
-NEWS_API_KEY = "46be1a687fdf44a7871f4e82e0a2b505"
+# NewsData.io API Key
+NEWS_API_KEY = "pub_61224dd3e7214d59b44bf40b85f1858f"
 
-# Scheduler: Stunden zwischen Updates
-UPDATE_INTERVAL_HOURS = 4  # 4 Stunden wie gewünscht
-
-# Free Trial Limit (pro Tag)
+# Free Trial Limit
 FREE_TRIAL_LIMIT = 10
 
-# Optional: Stripe - falls du später Zahlungen integrieren willst
-STRIPE_SECRET_KEY = "sk_test_DEIN_KEY"
-STRIPE_PUBLISHABLE_KEY = "pk_test_DEIN_KEY"
-PAID_PLAN_PRICE_ID = "price_123456789"
-
-# DB Pfad (relativ zum Projekt)
+# DB Pfad
 DB_PATH = "backend/news.db"
 
+# Scheduler Update Intervall (falls später genutzt)
+UPDATE_INTERVAL_HOURS = 4
