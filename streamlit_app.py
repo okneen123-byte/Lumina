@@ -1,118 +1,97 @@
 # streamlit_app.py
 import streamlit as st
 import requests
+import os
 
-# 🔧 Hier Render-URL deines Backends eintragen
-# Beispiel: https://lumina-backend.onrender.com
-API_BASE = "https://luminanews-ai.onrender.com"
+# ---------- KONFIG ----------
+BACKEND_URL = os.getenv("BACKEND_URL", "https://dein-backend.onrender.com")
 
-st.set_page_config(page_title="Lumina KI News", page_icon="📰", layout="centered")
+st.set_page_config(page_title="Lumina News KI", page_icon="📰", layout="centered")
 
-st.title("🧠 Lumina KI – Personalisierte News")
-
-# ---------------- AUTH ----------------
-menu = ["Login", "Sign Up", "Personalisierte News", "Kategorien-News"]
-choice = st.sidebar.selectbox("Menü", menu)
-
+# ---------- SESSION ----------
 if "email" not in st.session_state:
     st.session_state.email = None
 if "password" not in st.session_state:
     st.session_state.password = None
+if "is_paid" not in st.session_state:
+    st.session_state.is_paid = False
 
-def signup():
-    st.subheader("Neues Konto erstellen")
+# ---------- FUNKTIONEN ----------
+def signup(email, password):
+    res = requests.post(f"{BACKEND_URL}/signup", json={"email": email, "password": password})
+    return res.json() if res.status_code == 200 else {"error": res.text}
+
+def login(email, password):
+    res = requests.post(f"{BACKEND_URL}/login", json={"email": email, "password": password})
+    if res.status_code == 200:
+        data = res.json()
+        st.session_state.email = email
+        st.session_state.password = password
+        st.session_state.is_paid = data.get("is_paid", False)
+        return True
+    else:
+        st.error("❌ Falsche Zugangsdaten.")
+        return False
+
+def get_news(category="general", language="en", sort_by="newest"):
+    body = {
+        "email": st.session_state.email,
+        "password": st.session_state.password,
+        "category": category,
+        "language": language,
+        "sort_by": sort_by,
+    }
+    res = requests.post(f"{BACKEND_URL}/news", json=body)
+    if res.status_code == 200:
+        return res.json().get("news", [])
+    else:
+        st.error("Fehler beim Laden der News.")
+        return []
+
+
+# ---------- UI ----------
+st.title("🧠 Lumina News KI")
+
+if not st.session_state.email:
+    st.subheader("🔑 Anmeldung oder Registrierung")
+
+    choice = st.radio("Was möchtest du tun?", ["Einloggen", "Registrieren"])
     email = st.text_input("E-Mail")
     password = st.text_input("Passwort", type="password")
-    if st.button("Registrieren"):
-        res = requests.post(f"{API_BASE}/signup", json={"email": email, "password": password})
-        if res.status_code == 200:
-            st.success("✅ Konto erstellt! Bitte jetzt einloggen.")
+
+    if st.button("Weiter"):
+        if choice == "Registrieren":
+            out = signup(email, password)
+            if "error" not in out:
+                st.success("✅ Benutzer erfolgreich erstellt! Bitte einloggen.")
         else:
-            st.error(res.json().get("detail", "Fehler bei Registrierung."))
+            if login(email, password):
+                st.success(f"Willkommen, {email}!")
+else:
+    st.success(f"Angemeldet als {st.session_state.email}")
+    st.sidebar.subheader("⚙ Optionen")
+    category = st.sidebar.selectbox(
+        "Kategorie",
+        ["general", "technology", "business", "sports", "entertainment", "science", "health"],
+    )
+    language = st.sidebar.selectbox("Sprache", ["en", "de", "fr", "es"])
+    sort_by = st.sidebar.radio("Sortierung", ["newest", "importance"])
 
-def login():
-    st.subheader("Login")
-    email = st.text_input("E-Mail")
-    password = st.text_input("Passwort", type="password")
-    if st.button("Einloggen"):
-        res = requests.post(f"{API_BASE}/login", json={"email": email, "password": password})
-        if res.status_code == 200:
-            st.session_state.email = email
-            st.session_state.password = password
-            st.success("✅ Erfolgreich eingeloggt!")
+    if st.button("📰 News laden"):
+        with st.spinner("Lade aktuelle Artikel..."):
+            news_list = get_news(category, language, sort_by)
+
+        if not news_list:
+            st.warning("Keine News gefunden.")
         else:
-            st.error("❌ Ungültige Anmeldedaten.")
-
-def show_personalized():
-    if not st.session_state.email:
-        st.warning("Bitte zuerst einloggen.")
-        return
-
-    st.subheader("✨ Deine Interessen")
-    interests = st.text_input("Woran bist du interessiert? (z. B. KI, Politik, Gaming)")
-    if st.button("Interessen speichern"):
-        data = {"email": st.session_state.email, "interests": interests}
-        res = requests.post(f"{API_BASE}/set_preferences", json=data)
-        if res.status_code == 200:
-            st.success("✅ Interessen gespeichert!")
-        else:
-            st.error("Fehler beim Speichern der Interessen.")
-
-    st.divider()
-    st.subheader("🧠 Personalisierte News")
-
-    if st.button("Aktualisieren"):
-        res = requests.post(f"{API_BASE}/news/personalized", json={"email": st.session_state.email})
-        if res.status_code == 200:
-            news_items = res.json().get("personalized_news", [])
-            if not news_items:
-                st.info("Keine personalisierten Artikel gefunden.")
-            for n in news_items:
+            for n in news_list:
                 st.markdown(f"### [{n['title']}]({n['url']})")
-                st.write(n['description'])
-                st.caption(f"📰 {n['source']} | 📅 {n['published_at']} | 🔥 Relevanz: {n['relevance_score']}")
+                if n.get("description"):
+                    st.write(n["description"])
+                st.caption(f"📍 {n.get('source', 'Unbekannt')} — 🕓 {n.get('published_at', '')}")
                 st.divider()
-        else:
-            st.error("Fehler beim Abrufen der personalisierten News.")
 
-def show_category_news():
-    if not st.session_state.email:
-        st.warning("Bitte zuerst einloggen.")
-        return
-
-    st.subheader("📚 Kategorie-News")
-    category = st.selectbox("Kategorie auswählen", ["general", "technology", "sports", "science", "business", "health"])
-    language = st.selectbox("Sprache", ["en", "de"])
-    sort_by = st.radio("Sortierung", ["newest", "important"])
-
-    if st.button("News laden"):
-        data = {
-            "email": st.session_state.email,
-            "password": st.session_state.password,
-            "category": category,
-            "language": language,
-            "sort_by": sort_by,
-            "limit": 20
-        }
-        res = requests.post(f"{API_BASE}/news", json=data)
-        if res.status_code == 200:
-            articles = res.json().get("news", [])
-            if not articles:
-                st.info("Keine Artikel gefunden.")
-            for n in articles:
-                st.markdown(f"### [{n['title']}]({n['url']})")
-                st.write(n['description'])
-                st.caption(f"📰 {n['source']} | 📅 {n['published_at']}")
-                st.divider()
-        else:
-            st.error(res.json().get("detail", "Fehler beim Abrufen der News."))
-
-# ---------------- ROUTING ----------------
-if choice == "Sign Up":
-    signup()
-elif choice == "Login":
-    login()
-elif choice == "Personalisierte News":
-    show_personalized()
-elif choice == "Kategorien-News":
-    show_category_news()
+    if st.button("🚪 Abmelden"):
+        st.session_state.email = None
+        st.session_state.password = None
+        st.experimental_rerun()
