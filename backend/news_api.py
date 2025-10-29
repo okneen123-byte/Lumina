@@ -1,72 +1,57 @@
 # backend/news_api.py
 import requests
-from dateutil import parser as dateparser
-from datetime import datetime, timezone
 from config import NEWS_API_KEY
+import logging
 
-# Kategorien: wir unterstützen diese im Scheduler / Frontend
-VALID_CATEGORIES = ["general", "technology", "business", "sports", "science", "entertainment", "poli"]
-
-# Keywords, die Wichtigkeit erhöhen
-IMPORTANCE_KEYWORDS = [
-    "breaking", "urgent", "exclusive", "explosion", "crash", "attack",
-    "krieg", "brutal", "katastrophe", "dringend", "politics", "economy"
-]
+logger = logging.getLogger("news_api")
 
 BASE_URL = "https://newsdata.io/api/1/news"
 
 def fetch_news_from_api(category="general", language="en", page_size=40):
-    """
-    Holt Artikel von newsdata.io (newsdata.io API).
-    Gibt eine Liste von standardisierten Artikel-Dicts zurück.
-    """
+    """Holt News von NewsData.io."""
     params = {
         "apikey": NEWS_API_KEY,
         "language": language,
         "category": category,
-        "page": 0
+        "country": "us" if language == "en" else "de",
+        "page": 1  # NewsData erwartet 1-basiert
     }
-    articles = []
+
     try:
-        resp = requests.get(BASE_URL, params=params, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
-        # newsdata.io liefert 'results' key
-        for item in data.get("results", []):
-            published = item.get("pubDate") or item.get("pubDateTime") or item.get("publishedAt") or item.get("date")
-            try:
-                published_dt = dateparser.parse(published) if published else datetime.now(timezone.utc)
-            except Exception:
-                published_dt = datetime.now(timezone.utc)
+        r = requests.get(BASE_URL, params=params, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+
+        if not data.get("results"):
+            logger.warning(f"[NewsAPI] Keine Artikel für {category} ({language})")
+            return []
+
+        articles = []
+        for item in data["results"]:
             articles.append({
-                "title": item.get("title") or "",
-                "description": item.get("description") or item.get("content") or "",
-                "url": item.get("link") or item.get("url") or "",
-                "source": (item.get("source_id") or item.get("source") or ""),
-                "published_at": published_dt.isoformat()
+                "title": item.get("title", ""),
+                "description": item.get("description", ""),
+                "url": item.get("link", ""),
+                "source": item.get("source_id", ""),
+                "published_at": item.get("pubDate", "")
             })
+
+        logger.info(f"[NewsAPI] {len(articles)} Artikel erhalten für {category} ({language})")
         return articles
-    except Exception as e:
-        print(f"[NewsAPI] Fehler beim Abruf: {e}")
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"[NewsAPI] Fehler beim Abruf: {e}")
         return []
 
+
 def compute_importance(article):
-    """Einfache Heuristik: recency + keyword boosts + Länge."""
-    score = 0.0
-    title = (article.get("title") or "").lower()
-    desc = (article.get("description") or "").lower()
-    # recency
-    try:
-        published = dateparser.parse(article.get("published_at"))
-        hours_old = max(0.0, (datetime.now(timezone.utc) - published).total_seconds() / 3600.0)
-    except Exception:
-        hours_old = 9999.0
-    recency_score = max(0.0, 1.0 - (hours_old / 72.0))  # 0..1 (<=72h higher)
-    # keyword bonus
-    keyword_bonus = 0.0
-    for kw in IMPORTANCE_KEYWORDS:
-        if kw in title or kw in desc:
-            keyword_bonus += 0.25
-    length_bonus = min(0.2, len(desc) / 500.0)
-    score = recency_score * 0.7 + keyword_bonus * 0.2 + length_bonus * 0.1
-    return max(0.0, min(1.0, score))
+    """Berechnet eine einfache Wichtigkeit."""
+    text = (article.get("title", "") or "") + " " + (article.get("description", "") or "")
+    score = 0
+    if "breaking" in text.lower():
+        score += 2
+    if "exclusive" in text.lower():
+        score += 1
+    if len(text) > 200:
+        score += 0.5
+    return score
