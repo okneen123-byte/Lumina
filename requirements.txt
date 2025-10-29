@@ -1,10 +1,6 @@
 fastapi
 uvicorn
-sqlite3-binary
-passlib[bcrypt]
 requests
-python-dotenv
-pydantic
-schedule
-newsdataapi==0.1.1
-streamlit
+python-dateutil
+apscheduler
+passlib[bcrypt]
