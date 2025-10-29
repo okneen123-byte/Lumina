@@ -4,7 +4,6 @@ import logging
 from datetime import date
 from config import DB_PATH
 from backend.news_api import fetch_news_from_api, compute_importance
-from backend.personalization import compute_relevance_score, get_user_preferences
 
 # ------------------- Logging -------------------
 logger = logging.getLogger("database")
@@ -15,12 +14,10 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-
 # ------------------- DB-Verbindung -------------------
 def _get_conn():
-    """Erstellt eine SQLite-Verbindung."""
+    """Erstellt eine SQLite-Verbindung (Render-kompatibel)."""
     return sqlite3.connect(DB_PATH, check_same_thread=False)
-
 
 # ------------------- Initialisierung -------------------
 def init_db():
@@ -29,6 +26,7 @@ def init_db():
         conn = _get_conn()
         c = conn.cursor()
 
+        # Tabelle: News
         c.execute("""
         CREATE TABLE IF NOT EXISTS news (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,6 +42,7 @@ def init_db():
         )
         """)
 
+        # Tabelle: user_queries (für Free-Trial)
         c.execute("""
         CREATE TABLE IF NOT EXISTS user_queries (
             email TEXT NOT NULL,
@@ -54,12 +53,11 @@ def init_db():
         """)
 
         conn.commit()
-        logger.info("Datenbanktabellen erfolgreich initialisiert.")
+        logger.info("✅ Datenbanktabellen erfolgreich initialisiert.")
     except Exception as e:
-        logger.exception("Fehler beim Initialisieren der Datenbank: %s", e)
+        logger.exception("❌ Fehler beim Initialisieren der Datenbank: %s", e)
     finally:
         conn.close()
-
 
 # ------------------- News speichern -------------------
 def save_news_for_category(category="general", language="en"):
@@ -94,15 +92,14 @@ def save_news_for_category(category="general", language="en"):
                 logger.warning("Fehler beim Einfügen eines Artikels: %s", e)
 
         conn.commit()
-        logger.info(f"News für Kategorie '{category}' gespeichert.")
+        logger.info(f"✅ {len(articles)} News für Kategorie '{category}' gespeichert.")
     except Exception as e:
-        logger.exception("save_news_for_category DB-Fehler: %s", e)
+        logger.exception("❌ save_news_for_category DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
         except Exception:
             pass
-
 
 # ------------------- News abrufen -------------------
 def get_news(category="general", language="en", sort_by="newest", limit=50):
@@ -135,12 +132,12 @@ def get_news(category="general", language="en", sort_by="newest", limit=50):
                 "url": r[2],
                 "source": r[3],
                 "published_at": r[4],
-                "importance": float(r[5]) if r[5] else 0.0
+                "importance": float(r[5]) if r[5] is not None else 0.0
             })
 
-        logger.info(f"{len(news)} News für Kategorie '{category}' geladen.")
+        logger.info(f"✅ {len(news)} News für Kategorie '{category}' geladen.")
     except Exception as e:
-        logger.exception("get_news DB-Fehler: %s", e)
+        logger.exception("❌ get_news DB-Fehler: %s", e)
     finally:
         try:
             conn.close()
@@ -149,43 +146,54 @@ def get_news(category="general", language="en", sort_by="newest", limit=50):
 
     return news
 
-
-# ------------------- Personalisierte News -------------------
-def get_personalized_news(email: str, limit=30):
-    """Holt personalisierte News basierend auf Interessen."""
-    prefs = get_user_preferences(email)
-    if not prefs:
-        logger.info(f"Keine Interessen für {email} gespeichert.")
-        return []
-
+# ------------------- Free-Trial Counter -------------------
+def increment_user_query(email: str):
+    """Erhöht den täglichen Anfragezähler des Nutzers."""
+    today = date.today().isoformat()
+    count = 0
     try:
         conn = _get_conn()
         c = conn.cursor()
-        c.execute("""
-            SELECT title, description, url, source, published_at
-            FROM news
-            ORDER BY datetime(published_at) DESC
-            LIMIT 100
-        """)
-        rows = c.fetchall()
+
+        c.execute("SELECT count FROM user_queries WHERE email=? AND date=?", (email, today))
+        row = c.fetchone()
+
+        if row:
+            count = row[0] + 1
+            c.execute("UPDATE user_queries SET count=? WHERE email=? AND date=?", (count, email, today))
+        else:
+            count = 1
+            c.execute("INSERT INTO user_queries (email, date, count) VALUES (?, ?, ?)", (email, today, count))
+
+        conn.commit()
+        logger.info(f"User {email}: Query-Count = {count}")
     except Exception as e:
-        logger.exception("get_personalized_news DB-Fehler: %s", e)
-        return []
+        logger.exception("increment_user_query DB-Fehler: %s", e)
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
 
-    scored_news = []
-    for r in rows:
-        score = compute_relevance_score(r[0] or "", r[1] or "", prefs)
-        if score > 0.25:
-            scored_news.append({
-                "title": r[0],
-                "description": r[1],
-                "url": r[2],
-                "source": r[3],
-                "published_at": r[4],
-                "relevance_score": score
-            })
+    return count
 
-    scored_news.sort(key=lambda x: x["relevance_score"], reverse=True)
-    return scored_news[:limit]
+def get_user_query_count_today(email: str):
+    """Gibt zurück, wie viele Anfragen der Nutzer heute gemacht hat."""
+    today = date.today().isoformat()
+    count = 0
+    try:
+        conn = _get_conn()
+        c = conn.cursor()
+        c.execute("SELECT count FROM user_queries WHERE email=? AND date=?", (email, today))
+        row = c.fetchone()
+        if row:
+            count = row[0]
+    except Exception as e:
+        logger.exception("get_user_query_count_today DB-Fehler: %s", e)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    return count
