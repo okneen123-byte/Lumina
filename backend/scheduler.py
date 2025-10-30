@@ -21,4 +21,4 @@ def start_scheduler():
         _scheduler = BackgroundScheduler()
         _scheduler.add_job(update_all, "interval", hours=UPDATE_INTERVAL_HOURS)
         _scheduler.start()
-        print(f"[Scheduler] gestartet – alle {UPDATE_INTERVAL_HOURS} Stunden.")
+        print(f"[Scheduler] gestartet – alle {UPDATE_INTERVAL_HOURS} Stunden.")
