@@ -3,45 +3,26 @@ import sqlite3
 from passlib.hash import bcrypt
 from datetime import datetime
 from config import DB_PATH
-import logging
 
-logger = logging.getLogger("auth")
-if not logger.handlers:
-    h = logging.StreamHandler()
-    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-    h.setFormatter(fmt)
-    logger.addHandler(h)
-logger.setLevel(logging.INFO)
-
-MAX_BCRYPT_BYTES = 72  # bcrypt limit
+MAX_BCRYPT_BYTES = 72
 
 def _sanitize_password(pw):
-    """Sicherstellen, dass pw ein str ist, führende/abschließende WS entfernen.
-    Rückgabe: (clean_pw, byte_length)"""
     if pw is None:
         return "", 0
     if not isinstance(pw, str):
-        # Falls Bytes oder anderes Objekt kommt, versuchen string-convert
-        try:
-            pw = str(pw)
-        except Exception:
-            pw = ""
-    # Entferne unsichtbare NBSP / zero-width (optional)
-    # pw = pw.replace("\u00A0", " ")
-    # pw = pw.replace("\u200B", "")
+        pw = str(pw)
     clean = pw.strip()
-    blen = len(clean.encode("utf-8"))
-    return clean, blen
+    return clean, len(clean.encode("utf-8"))
 
 def create_user(email: str, password: str):
-    """Erstellt einen neuen Nutzer mit gehashtem Passwort."""
-    pw, blen = _sanitize_password(password)
-    logger.info(f"[auth] create_user called for {email!r} pw_repr={repr(pw)} bytes={blen}")
+    """Erstellt neuen Nutzer mit sicherem Passwort-Hash."""
+    password, blen = _sanitize_password(password)
     if blen == 0:
-        raise ValueError("Password must not be empty.")
+        raise ValueError("Password cannot be empty.")
     if blen > MAX_BCRYPT_BYTES:
-        raise ValueError("Password too long: max 72 bytes allowed.")
-    pw_hash = bcrypt.hash(pw)
+        raise ValueError("Password too long (max 72 bytes).")
+
+    pw_hash = bcrypt.hash(password)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
@@ -56,41 +37,21 @@ def create_user(email: str, password: str):
         c.execute("INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)",
                   (email, pw_hash, datetime.utcnow().isoformat()))
         conn.commit()
+        return True
     except sqlite3.IntegrityError:
-        conn.close()
         return False
-    conn.close()
-    return True
+    finally:
+        conn.close()
 
 def verify_user(email: str, password: str):
-    """Überprüft E-Mail + Passwort, gibt True/False zurück."""
-    pw, blen = _sanitize_password(password)
-    logger.info(f"[auth] verify_user called for {email!r} pw_repr={repr(pw)} bytes={blen}")
-    if blen == 0 or blen > MAX_BCRYPT_BYTES:
-        # zu kurz/leer oder zu lang -> sofort False (kein 500)
-        return False
-
+    """Überprüft Nutzer-Login."""
+    password, _ = _sanitize_password(password)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT password_hash FROM users WHERE email=?", (email,))
     row = c.fetchone()
     conn.close()
-    if not row:
-        return False
-    pw_hash = row[0]
-    try:
-        return bcrypt.verify(pw, pw_hash)
-    except ValueError as e:
-        # z. B. wenn pw_hash ein unerwarteter Wert ist
-        logger.exception("[auth] bcrypt.verify failed: %s", e)
-        return False
-
-def set_paid(email: str):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("UPDATE users SET is_paid=1 WHERE email=?", (email,))
-    conn.commit()
-    conn.close()
+    return bool(row) and bcrypt.verify(password, row[0])
 
 def is_paid(email: str):
     conn = sqlite3.connect(DB_PATH)
@@ -98,6 +59,4 @@ def is_paid(email: str):
     c.execute("SELECT is_paid FROM users WHERE email=?", (email,))
     row = c.fetchone()
     conn.close()
-    if not row:
-        return False
-    return bool(row[0])
+    return bool(row and row[0])
