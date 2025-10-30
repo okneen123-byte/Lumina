@@ -1,22 +1,18 @@
-# backend/config.py
-import os
+# config.py
+# ========== Lumina News KI Configuration ==========
 
-# ========== NEWSDATA.IO API KEY ==========
-# Du hast den Key angegeben — steht hier für sofortige Nutzung.
-# Empfehlung: In Produktion als Environment-Variable speichern.
+# Dein NewsData.io API Key
 NEWS_API_KEY = "pub_61224dd3e7214d59b44bf40b85f1858f"
 
-# Scheduler: Stunden zwischen Updates (12 => 2x täglich)
-UPDATE_INTERVAL_HOURS = 12
+# Scheduler-Intervall (Stunden)
+UPDATE_INTERVAL_HOURS = 12  # 2x pro Tag
 
-# Free Trial Limit (pro Tag)
+# Kostenloses Limit (pro Tag)
 FREE_TRIAL_LIMIT = 10
 
-# Optional: Stripe - falls du später Zahlungen integrieren willst
-STRIPE_SECRET_KEY = "sk_test_DEIN_KEY"
-STRIPE_PUBLISHABLE_KEY = "pk_test_DEIN_KEY"
-PAID_PLAN_PRICE_ID = "price_123456789"
+# Pfad zur SQLite-Datenbank
+DB_PATH = "backend/news.db"
 
-# DB Pfad (relativ zum Projekt; bleibt im backend-Ordner)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "news.db")
+# Kategorien (inkl. Powi)
+CATEGORIES = ["general", "technology", "business", "sports", "science", "entertainment", "powi"]
+LANGUAGES = ["en", "de"]
