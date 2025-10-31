@@ -228,6 +228,6 @@ demo_news = {
                 "importance": 8.0,
                 "published_at": "2025-10-28"
             }
-        ]
-    }
+        ]
+    }
 }
