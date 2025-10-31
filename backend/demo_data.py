@@ -1,159 +1,232 @@
 # backend/demo_data.py
-# ===========================================
-# Offline-Demo-News für Lumina News KI
-# ===========================================
+# ====================================================
+# Lumina News – Offline-Demo-Datenbank
+# Enthält Beispielnachrichten für alle Kategorien
+# in Deutsch und Englisch.
+# ====================================================
 
-DEMO_NEWS = {
-    "en": {
-        "general": [
+demo_news = {
+    "general": {
+        "de": [
             {
-                "title": "UN Launches Global Education Fund",
-                "description": "A new international program aims to improve access to education for children worldwide.",
-                "url": "https://www.un.org/en/education",
-                "source": "United Nations",
-                "published_at": "2025-10-30",
-                "importance": 0.95
+                "title": "Künstliche Intelligenz verändert die Arbeitswelt",
+                "description": "Immer mehr Unternehmen setzen KI zur Automatisierung und Entscheidungsfindung ein.",
+                "url": "https://www.handelsblatt.com/technik/kuenstliche-intelligenz/",
+                "importance": 8.9,
+                "published_at": "2025-10-29"
             },
             {
-                "title": "AI Helps Predict Natural Disasters",
-                "description": "Machine learning models now forecast floods and wildfires more accurately.",
-                "url": "https://www.nature.com/articles/ai-climate",
-                "source": "Nature",
-                "published_at": "2025-10-29",
-                "importance": 0.9
+                "title": "Deutschland plant neue Energiepolitik",
+                "description": "Die Bundesregierung will den Ausbau erneuerbarer Energien drastisch beschleunigen.",
+                "url": "https://www.tagesschau.de/inland/energiewende-deutschland-101.html",
+                "importance": 8.2,
+                "published_at": "2025-10-28"
             }
         ],
-        "technology": [
+        "en": [
             {
-                "title": "OpenAI Unveils GPT-5 for Next-Gen AI Assistants",
-                "description": "The new model brings human-like reasoning and multimodal understanding.",
-                "url": "https://openai.com/research/gpt-5",
-                "source": "OpenAI",
-                "published_at": "2025-10-28",
-                "importance": 1.0
-            }
-        ],
-        "business": [
+                "title": "AI reshapes the global workforce",
+                "description": "Companies worldwide adopt AI to improve efficiency and cut costs.",
+                "url": "https://www.bbc.com/news/technology",
+                "importance": 8.7,
+                "published_at": "2025-10-29"
+            },
             {
-                "title": "Tesla Expands Battery Production in Europe",
-                "description": "A new Gigafactory in Germany is expected to create over 10,000 jobs.",
-                "url": "https://www.bloomberg.com/tesla-battery-europe",
-                "source": "Bloomberg",
-                "published_at": "2025-10-29",
-                "importance": 0.9
-            }
-        ],
-        "sports": [
-            {
-                "title": "Olympic Games 2028 Introduce AI Referees",
-                "description": "Smart systems will assist in rule enforcement and fairness.",
-                "url": "https://www.espn.com/ai-olympics",
-                "source": "ESPN",
-                "published_at": "2025-10-30",
-                "importance": 0.8
-            }
-        ],
-        "science": [
-            {
-                "title": "NASA Confirms Organic Molecules on Mars",
-                "description": "The latest rover mission uncovers evidence that could suggest past life.",
-                "url": "https://mars.nasa.gov/news",
-                "source": "NASA",
-                "published_at": "2025-10-29",
-                "importance": 1.0
-            }
-        ],
-        "entertainment": [
-            {
-                "title": "Marvel Announces Next Multiverse Saga",
-                "description": "Fans are excited as Marvel teases the next generation of heroes.",
-                "url": "https://www.marvel.com/news",
-                "source": "Marvel Studios",
-                "published_at": "2025-10-29",
-                "importance": 0.85
-            }
-        ],
-        "powi": [
-            {
-                "title": "European Union Debates Digital Sovereignty",
-                "description": "Leaders push for stronger data independence and ethical AI regulation.",
-                "url": "https://www.euractiv.com/section/digital/news/eu-digital-sovereignty/",
-                "source": "Euractiv",
-                "published_at": "2025-10-30",
-                "importance": 0.95
+                "title": "Europe launches new climate plan",
+                "description": "EU leaders agreed on a stronger commitment to renewable energy.",
+                "url": "https://www.theguardian.com/environment/",
+                "importance": 8.3,
+                "published_at": "2025-10-28"
             }
         ]
     },
-
-    "de": {
-        "general": [
+    "business": {
+        "de": [
             {
-                "title": "UNO startet globalen Bildungsfonds",
-                "description": "Ein internationales Programm soll Bildung weltweit verbessern.",
-                "url": "https://www.un.org/de/education",
-                "source": "Vereinte Nationen",
-                "published_at": "2025-10-30",
-                "importance": 0.95
+                "title": "DAX erreicht neues Rekordhoch",
+                "description": "Die deutschen Aktienmärkte profitieren von starken Quartalszahlen.",
+                "url": "https://www.faz.net/aktuell/finanzen/",
+                "importance": 8.1,
+                "published_at": "2025-10-30"
+            },
+            {
+                "title": "Amazon expandiert weiter in Europa",
+                "description": "Der US-Konzern plant neue Logistikzentren in Deutschland und Frankreich.",
+                "url": "https://www.manager-magazin.de/",
+                "importance": 7.8,
+                "published_at": "2025-10-29"
             }
         ],
-        "technology": [
+        "en": [
             {
-                "title": "OpenAI stellt GPT-5 vor",
-                "description": "Das neue Modell bringt menschlichere KI mit besserem Verständnis.",
-                "url": "https://openai.com/research/gpt-5",
-                "source": "OpenAI",
-                "published_at": "2025-10-28",
-                "importance": 1.0
+                "title": "Stock markets hit record highs",
+                "description": "Investors show confidence despite global uncertainty.",
+                "url": "https://edition.cnn.com/business",
+                "importance": 8.0,
+                "published_at": "2025-10-30"
+            },
+            {
+                "title": "Tesla announces new European factory",
+                "description": "The EV giant expands production capacity in Germany.",
+                "url": "https://www.reuters.com/business/autos-transportation/",
+                "importance": 8.2,
+                "published_at": "2025-10-28"
+            }
+        ]
+    },
+    "technology": {
+        "de": [
+            {
+                "title": "Apple stellt revolutionäres AR-Headset vor",
+                "description": "Das neue Gerät soll Arbeit und Freizeit in virtuellen Welten verbinden.",
+                "url": "https://www.heise.de/news/",
+                "importance": 9.0,
+                "published_at": "2025-10-29"
+            },
+            {
+                "title": "Europäische Raumfahrtagentur testet KI im All",
+                "description": "Neue Satelliten sollen mit autonomen Entscheidungsmodulen ausgerüstet werden.",
+                "url": "https://www.spiegel.de/wissenschaft/",
+                "importance": 8.5,
+                "published_at": "2025-10-28"
             }
         ],
-        "business": [
+        "en": [
             {
-                "title": "Tesla erweitert Batterieproduktion in Deutschland",
-                "description": "Die neue Gigafactory schafft über 10.000 Arbeitsplätze.",
-                "url": "https://www.bloomberg.com/tesla-battery-europe",
-                "source": "Bloomberg",
-                "published_at": "2025-10-29",
-                "importance": 0.9
+                "title": "Google unveils next-gen AI chip",
+                "description": "The new Tensor chip promises faster AI processing and energy savings.",
+                "url": "https://techcrunch.com/",
+                "importance": 9.1,
+                "published_at": "2025-10-30"
+            },
+            {
+                "title": "NASA uses AI to plan Mars missions",
+                "description": "Machine learning helps optimize mission routes and save fuel.",
+                "url": "https://www.nasa.gov/",
+                "importance": 8.6,
+                "published_at": "2025-10-28"
+            }
+        ]
+    },
+    "sports": {
+        "de": [
+            {
+                "title": "Deutschland gewinnt Nations League",
+                "description": "Die deutsche Nationalmannschaft feiert ein starkes Comeback.",
+                "url": "https://www.kicker.de/",
+                "importance": 8.7,
+                "published_at": "2025-10-27"
+            },
+            {
+                "title": "Lewis Hamilton kündigt Karriereende an",
+                "description": "Der siebenfache Weltmeister verlässt die Formel 1 nach der Saison 2025.",
+                "url": "https://www.sport1.de/",
+                "importance": 9.2,
+                "published_at": "2025-10-30"
             }
         ],
-        "sports": [
+        "en": [
             {
-                "title": "KI-Schiedsrichter bei Olympia 2028",
-                "description": "Automatische Systeme sollen faire Entscheidungen garantieren.",
-                "url": "https://www.espn.com/ai-olympics",
-                "source": "ESPN",
-                "published_at": "2025-10-30",
-                "importance": 0.8
+                "title": "Manchester City wins Champions League",
+                "description": "City secures their second consecutive European title.",
+                "url": "https://www.espn.com/",
+                "importance": 9.3,
+                "published_at": "2025-10-30"
+            },
+            {
+                "title": "US sprinter breaks 100m world record",
+                "description": "A new era begins in track and field with record-breaking performance.",
+                "url": "https://www.bbc.com/sport",
+                "importance": 8.8,
+                "published_at": "2025-10-29"
+            }
+        ]
+    },
+    "science": {
+        "de": [
+            {
+                "title": "Forscher entdecken mögliches Heilmittel gegen Alzheimer",
+                "description": "Ein neues Medikament zeigt beeindruckende Ergebnisse in klinischen Studien.",
+                "url": "https://www.spektrum.de/",
+                "importance": 9.0,
+                "published_at": "2025-10-29"
+            },
+            {
+                "title": "Klimawandel: 2025 war eines der heißesten Jahre",
+                "description": "Globale Temperaturen erreichen Rekordwerte, warnen Experten.",
+                "url": "https://www.tagesspiegel.de/",
+                "importance": 8.5,
+                "published_at": "2025-10-28"
             }
         ],
-        "science": [
+        "en": [
             {
-                "title": "NASA findet organische Moleküle auf dem Mars",
-                "description": "Ein Hinweis auf mögliche Lebensformen in der Vergangenheit.",
-                "url": "https://mars.nasa.gov/news",
-                "source": "NASA",
-                "published_at": "2025-10-29",
-                "importance": 1.0
+                "title": "Scientists develop new Alzheimer treatment",
+                "description": "Early results show a potential breakthrough in neurodegenerative research.",
+                "url": "https://www.nature.com/",
+                "importance": 9.1,
+                "published_at": "2025-10-29"
+            },
+            {
+                "title": "Earth records warmest year ever",
+                "description": "Global temperatures hit unprecedented highs in 2025.",
+                "url": "https://www.nationalgeographic.com/",
+                "importance": 8.7,
+                "published_at": "2025-10-28"
+            }
+        ]
+    },
+    "entertainment": {
+        "de": [
+            {
+                "title": "Neue Netflix-Serie begeistert Zuschauer weltweit",
+                "description": "Die Sci-Fi-Serie 'Eclipse' wird zum globalen Streaming-Erfolg.",
+                "url": "https://www.filmstarts.de/",
+                "importance": 8.9,
+                "published_at": "2025-10-30"
             }
         ],
-        "entertainment": [
+        "en": [
             {
-                "title": "Marvel kündigt neue Multiversum-Saga an",
-                "description": "Fans weltweit feiern die Rückkehr ihrer Lieblingshelden.",
-                "url": "https://www.marvel.com/news",
-                "source": "Marvel Studios",
-                "published_at": "2025-10-29",
-                "importance": 0.85
+                "title": "Hollywood embraces AI in film production",
+                "description": "Studios use AI to optimize visual effects and post-production.",
+                "url": "https://variety.com/",
+                "importance": 8.5,
+                "published_at": "2025-10-29"
+            }
+        ]
+    },
+    "powi": {  # Politik / Wirtschaft Unterricht
+        "de": [
+            {
+                "title": "Bundestag diskutiert über neue Bildungsoffensive",
+                "description": "Politiker fordern mehr digitale Ausstattung für Schulen.",
+                "url": "https://www.bundesregierung.de/",
+                "importance": 8.4,
+                "published_at": "2025-10-29"
+            },
+            {
+                "title": "Inflation sinkt in Deutschland auf 2,1 Prozent",
+                "description": "Ökonomen sehen eine Trendwende bei den Verbraucherpreisen.",
+                "url": "https://www.tagesschau.de/wirtschaft/",
+                "importance": 8.2,
+                "published_at": "2025-10-28"
             }
         ],
-        "powi": [
+        "en": [
             {
-                "title": "EU diskutiert über digitale Souveränität",
-                "description": "Neue Regeln sollen Europas Datenunabhängigkeit sichern.",
-                "url": "https://www.euractiv.com/section/digital/news/eu-digital-sovereignty/",
-                "source": "Euractiv",
-                "published_at": "2025-10-30",
-                "importance": 0.95
+                "title": "Germany debates new education reform",
+                "description": "Government pushes for more digital tools in classrooms.",
+                "url": "https://www.dw.com/en/",
+                "importance": 8.5,
+                "published_at": "2025-10-29"
+            },
+            {
+                "title": "European inflation slows down",
+                "description": "Experts predict stable economic growth across the Eurozone.",
+                "url": "https://www.ft.com/",
+                "importance": 8.0,
+                "published_at": "2025-10-28"
             }
         ]
     }
