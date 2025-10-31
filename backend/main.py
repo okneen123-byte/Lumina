@@ -1,58 +1,35 @@
 # backend/main.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-from backend.database import init_db, get_news, increment_user_query
-from backend.scheduler import start_scheduler
-from backend.auth import create_user, verify_user, is_paid
-from config import FREE_TRIAL_LIMIT
+from backend.demo_data import DEMO_NEWS
+from config import UPDATE_INTERVAL_HOURS
 
-app = FastAPI(title="Lumina News KI API")
-
-class SignupModel(BaseModel):
-    email: str
-    password: str
-
-class LoginModel(BaseModel):
-    email: str
-    password: str
+app = FastAPI(title="Lumina News KI Demo")
 
 class NewsRequest(BaseModel):
-    email: str
-    password: str
     category: str = "general"
     language: str = "en"
     sort_by: str = "newest"
-    limit: int = 30
 
-init_db()
-start_scheduler()
-
-@app.post("/signup")
-def signup(data: SignupModel):
-    try:
-        ok = create_user(data.email.lower(), data.password)
-        if not ok:
-            raise HTTPException(status_code=400, detail="User already exists.")
-        return {"status": "ok", "message": "User created."}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/login")
-def login(data: LoginModel):
-    if verify_user(data.email.lower(), data.password):
-        return {"status": "ok", "is_paid": is_paid(data.email.lower())}
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+@app.get("/")
+def home():
+    return {"status": "ok", "message": "Lumina News KI Demo läuft!"}
 
 @app.post("/news")
-def news(req: NewsRequest):
-    email = req.email.lower()
-    if not verify_user(email, req.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+def get_news(req: NewsRequest):
+    lang = req.language if req.language in DEMO_NEWS else "en"
+    cat = req.category if req.category in DEMO_NEWS[lang] else "general"
+    news_list = DEMO_NEWS[lang][cat]
 
-    if not is_paid(email):
-        count = increment_user_query(email)
-        if count > FREE_TRIAL_LIMIT:
-            raise HTTPException(status_code=403, detail="Free trial limit reached.")
+    if req.sort_by == "importance":
+        news_list = sorted(news_list, key=lambda x: x["importance"], reverse=True)
+    else:
+        news_list = sorted(news_list, key=lambda x: x["published_at"], reverse=True)
 
-    results = get_news(req.category, req.language, req.sort_by, req.limit)
-    return {"category": req.category, "language": req.language, "sort_by": req.sort_by, "news": results}
+    return {
+        "language": lang,
+        "category": cat,
+        "update_interval_hours": UPDATE_INTERVAL_HOURS,
+        "count": len(news_list),
+        "news": news_list
+    }
