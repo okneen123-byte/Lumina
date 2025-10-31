@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from backend.demo_data import DEMO_NEWS
 from config import UPDATE_INTERVAL_HOURS
 
-app = FastAPI(title="Lumina News KI Demo")
+app = FastAPI(title="Lumina News KI – Dark Neon Edition")
 
 class NewsRequest(BaseModel):
     category: str = "general"
@@ -13,7 +13,7 @@ class NewsRequest(BaseModel):
 
 @app.get("/")
 def home():
-    return {"status": "ok", "message": "Lumina News KI Demo läuft!"}
+    return {"status": "ok", "message": "Lumina News KI Dark Neon Edition läuft!"}
 
 @app.post("/news")
 def get_news(req: NewsRequest):
