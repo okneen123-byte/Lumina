@@ -31,5 +31,5 @@ def get_news(req: NewsRequest):
         "category": cat,
         "update_interval_hours": UPDATE_INTERVAL_HOURS,
         "count": len(news_list),
-        "news": news_list
-    }
+        "news": news_list
+    }
