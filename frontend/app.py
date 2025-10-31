@@ -94,4 +94,4 @@ if st.button("🚀 Zeige Nachrichten / Show News"):
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.error("⚠ Fehler beim Laden der Nachrichten")
+            st.error("⚠ Fehler beim Laden der Nachrichten")
